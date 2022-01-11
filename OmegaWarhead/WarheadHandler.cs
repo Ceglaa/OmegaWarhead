@@ -1,49 +1,69 @@
 ﻿namespace OmegaWarhead.Events
 {
-    using System.Collections.Generic;
-    using Exiled.Events.EventArgs;
     using Exiled.API.Features;
+    using Exiled.Events.EventArgs;
     using MEC;
-    using UnityEngine;
-    using Exiled.API.Enums;
+    using System.Collections.Generic;
     internal sealed class WarheadHandler
     {
-        CoroutineHandle coroutine;
+        public static bool OmegaPhase { get; private set; } = false;
+        public List<CoroutineHandle> Coroutines = new List<CoroutineHandle>();
         public void OnDetonating()
         {
-            if (Plugin.Singleton.OmegaPhase == false && Plugin.Singleton.Config.RadiationMode == false)
+            if (Plugin.Singleton.Config.RadiationMode)
             {
-                Plugin.Singleton.OmegaPhase = !Plugin.Singleton.OmegaPhase;
-                Timing.CallDelayed(Plugin.Singleton.Config.Delay, () => Warhead.Start());
+                Coroutines.Add(Timing.RunCoroutine(RadiationCoroutine()));
             }
-            else if (Plugin.Singleton.OmegaPhase == true && Plugin.Singleton.Config.RadiationMode == false)
+            else if (!OmegaPhase)
             {
-                foreach (Player player in Player.List)
+                Coroutines.Add(Timing.RunCoroutine(OmegaWarhead()));
+                OmegaPhase = true;
+            }
+            else if (OmegaPhase)
+            {
+                foreach(Player player in Player.List)
                 {
-                    player.Kill(DamageTypes.Nuke);
+                    if (player != null && player.Role != RoleType.Spectator)
+                    {
+                        player.Kill("Omega Warhead");
+                    }
                 }
-                Plugin.Singleton.OmegaPhase = !Plugin.Singleton.OmegaPhase;
-            }
-            if (Plugin.Singleton.Config.RadiationMode == true)
-            {
-                Timing.CallDelayed(Plugin.Singleton.Config.Delay, () => Timing.RunCoroutine(DamageCoroutine()));
             }
         }
         public void OnWaitingForPlayers()
         {
-            Timing.KillCoroutines(coroutine);
-            Plugin.Singleton.OmegaPhase = false;
-        }
-        public IEnumerator<float> DamageCoroutine()
-        {
-            for(; ; )
+            OmegaPhase = false;
+            foreach(CoroutineHandle coroutine in Coroutines)
             {
-                foreach(Player player in Player.List)
+                Timing.KillCoroutines(coroutine);
+            }
+            Coroutines.Clear();
+        }
+        public void OnRoundEnded(RoundEndedEventArgs ev)
+        {
+            OmegaPhase = false;
+            foreach (CoroutineHandle coroutine in Coroutines)
+            {
+                Timing.KillCoroutines(coroutine);
+            }
+            Coroutines.Clear();
+        }
+        public IEnumerator<float> RadiationCoroutine()
+        {
+            yield return Timing.WaitForSeconds(Plugin.Singleton.Config.Delay);
+            while(Round.IsStarted)
+            {
+                foreach (Player player in Player.List)
                 {
-                    player.Hurt(Plugin.Singleton.Config.RadiationDamage, DamageTypes.Lure);
+                    player.Hurt("Radiation", Plugin.Singleton.Config.RadiationDamage);
                 }
                 yield return Timing.WaitForSeconds(Plugin.Singleton.Config.DelayBetweenDamage);
             }
+        }
+        public IEnumerator<float> OmegaWarhead()
+        {
+            yield return Timing.WaitForSeconds(Plugin.Singleton.Config.Delay);
+            Warhead.Start();
         }
     }
 }

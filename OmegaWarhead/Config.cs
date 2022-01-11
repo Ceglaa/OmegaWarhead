@@ -3,7 +3,7 @@
     using Exiled.API.Interfaces;
     using System.ComponentModel;
 
-    public class Config : IConfig
+    public sealed class Config : IConfig
     {
         public bool IsEnabled { get; set; } = true;
         [Description("How much time after Alpha Warhead Detonation, should Omega Warhead be started or Radiation Should Occur")]
