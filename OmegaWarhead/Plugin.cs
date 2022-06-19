@@ -9,40 +9,50 @@
 
     public class Plugin : Plugin<Config>
     {
-        private WarheadHandler handler;
-        public override string Author { get; } = "Cegla";
-        public override string Name { get; } = "OmegaWarhead";
-        public override string Prefix { get; } = "OmegaWarhead";
-        public override Version RequiredExiledVersion { get; } = new Version(4, 2, 1);
-        public override Version Version { get; } = new Version(1, 0, 1);
-        public override PluginPriority Priority { get; } = PluginPriority.Medium;
+        private Handler _handler;
+        
+        public override string Author => "Cegla";
 
-        public static Plugin Singleton { get; internal set; }
+        public override string Name => "OmegaWarhead";
+
+        public override string Prefix => "OmegaWarhead";
+
+        public override Version RequiredExiledVersion { get; } = new(5, 0, 0);
+        
+        public override Version Version { get; } = new(1, 0, 2);
+        
+        public override PluginPriority Priority => PluginPriority.Medium;
+
+        public static Plugin Singleton { get; private set; }
+        
         public override void OnEnabled()
         {
             Singleton = this;
             RegisterEvents();
             base.OnEnabled();
         }
+
         public override void OnDisabled()
         {
             Singleton = null;
             UnregisterEvents();
             base.OnDisabled();
         }
-        public void RegisterEvents()
+
+        private void RegisterEvents()
         {
-            handler = new WarheadHandler();
-            Warhead.Detonated += handler.OnDetonating;
-            Server.WaitingForPlayers += handler.OnWaitingForPlayers;
-            Server.RoundEnded += handler.OnRoundEnded;
+            _handler = new Handler();
+            Warhead.Detonated += _handler.OnDetonating;
+            Server.WaitingForPlayers += _handler.OnWaitingForPlayers;
+            Server.RoundEnded += _handler.OnRoundEnded;
         }
-        public void UnregisterEvents()
+
+        private void UnregisterEvents()
         {
-            Warhead.Detonated -= handler.OnDetonating;
-            Server.WaitingForPlayers -= handler.OnWaitingForPlayers;
-            Server.RoundEnded -= handler.OnRoundEnded;
-            handler = null;
+            Warhead.Detonated -= _handler.OnDetonating;
+            Server.WaitingForPlayers -= _handler.OnWaitingForPlayers;
+            Server.RoundEnded -= _handler.OnRoundEnded;
+            _handler = null;
         }
     }
 

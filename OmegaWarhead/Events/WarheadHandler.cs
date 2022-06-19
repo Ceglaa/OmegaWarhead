@@ -1,13 +1,15 @@
 ﻿namespace OmegaWarhead.Events
 {
-    using Exiled.API.Features;
-    using Exiled.Events.EventArgs;
-    using MEC;
     using System.Collections.Generic;
-    internal sealed class WarheadHandler
+    using Exiled.API.Features;
+    using MEC;
+    
+    public sealed partial class Handler
     {
-        public static bool OmegaPhase { get; private set; } = false;
-        public List<CoroutineHandle> Coroutines = new List<CoroutineHandle>();
+        public static bool OmegaPhase { get; private set; }
+        
+        public List<CoroutineHandle> Coroutines { get; } = new();
+        
         public void OnDetonating()
         {
             if (Plugin.Singleton.Config.RadiationMode)
@@ -19,35 +21,18 @@
                 Coroutines.Add(Timing.RunCoroutine(OmegaWarhead()));
                 OmegaPhase = true;
             }
-            else if (OmegaPhase)
+            else
             {
                 foreach(Player player in Player.List)
                 {
-                    if (player != null && player.Role != RoleType.Spectator)
+                    if (player is not null && player.Role.Type is not RoleType.Spectator)
                     {
                         player.Kill("Omega Warhead");
                     }
                 }
             }
         }
-        public void OnWaitingForPlayers()
-        {
-            OmegaPhase = false;
-            foreach(CoroutineHandle coroutine in Coroutines)
-            {
-                Timing.KillCoroutines(coroutine);
-            }
-            Coroutines.Clear();
-        }
-        public void OnRoundEnded(RoundEndedEventArgs ev)
-        {
-            OmegaPhase = false;
-            foreach (CoroutineHandle coroutine in Coroutines)
-            {
-                Timing.KillCoroutines(coroutine);
-            }
-            Coroutines.Clear();
-        }
+
         public IEnumerator<float> RadiationCoroutine()
         {
             yield return Timing.WaitForSeconds(Plugin.Singleton.Config.Delay);
@@ -55,11 +40,12 @@
             {
                 foreach (Player player in Player.List)
                 {
-                    player.Hurt("Radiation", Plugin.Singleton.Config.RadiationDamage);
+                    player.Hurt( Plugin.Singleton.Config.RadiationDamage, "Radiation", "Radiation");
                 }
                 yield return Timing.WaitForSeconds(Plugin.Singleton.Config.DelayBetweenDamage);
             }
         }
+        
         public IEnumerator<float> OmegaWarhead()
         {
             yield return Timing.WaitForSeconds(Plugin.Singleton.Config.Delay);
